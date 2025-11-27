@@ -14,4 +14,4 @@
 - 请注意! 因为 `otf2ttf` 转换较为缓慢, github actions 转换一个 otf 文件大概需要 3-5 分钟, 完成思源黑体+思源宋体 4 组 28 个字重的字体转换需要比较长的时间, 可能会触发 github 免费版账户 github actions 使用时间限制
 
 ## 开源协议
-- 本项目采用[MIT协议](https://github.com/gek64/SourceHan-font-ttf/raw/main/LICENSE)
+- 本项目采用[MIT协议](https://github.com/unix755/SourceHan-font-ttf/raw/main/LICENSE)
