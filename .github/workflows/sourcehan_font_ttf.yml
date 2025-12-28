@@ -69,9 +69,9 @@ jobs:
           rm -rf OTF font *.txt
 
           # 思源黑体SC
-          wget https://github.com/adobe-fonts/source-han-sans/releases/latest/download/SourceHanSansSC.zip
+          wget https://github.com/adobe-fonts/source-han-sans/releases/latest/download/09_SourceHanSansSC.zip
           # 解压
-          unzip SourceHanSansSC.zip
+          unzip 09_SourceHanSansSC.zip
           # 转换
           otf2ttf OTF/SimplifiedChinese/*.otf
           # 获取版本
@@ -86,9 +86,9 @@ jobs:
           rm -rf OTF font *.txt
 
           # 思源黑体TC
-          wget https://github.com/adobe-fonts/source-han-sans/releases/latest/download/SourceHanSansTC.zip
+          wget https://github.com/adobe-fonts/source-han-sans/releases/latest/download/10_SourceHanSansTC.zip
           # 解压
-          unzip SourceHanSansTC.zip
+          unzip 10_SourceHanSansTC.zip
           # 转换
           otf2ttf OTF/TraditionalChinese/*.otf
           # 获取版本
