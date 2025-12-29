@@ -2,120 +2,79 @@ name: SourceHan font ttf
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
     paths-ignore:
-      - 'docs/**'
       - '.github/**'
-      - '**.md'
-      - 'LICENSE'
-  pull_request:
-    branches: [ main ]
-    paths-ignore:
-      - 'docs/**'
-      - '.github/**'
+      - '.git**'
       - '**.md'
       - 'LICENSE'
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'release version'
+        required: false
+        default: 'latest'
 
 jobs:
-  build:
+  job1:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
+      - name: checkout
+        uses: actions/checkout@main
 
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@main
         with:
-          python-version: '^3.10.1'
+          check-latest: true
 
-      - name: Build
+      - name: processing
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          pip install otf2ttf
-
-          # 思源宋体SC
-          # 下载
-          wget https://github.com/adobe-fonts/source-han-serif/releases/latest/download/09_SourceHanSerifSC.zip
-          # 解压
-          unzip 09_SourceHanSerifSC.zip
-          # 转换
-          otf2ttf OTF/SimplifiedChinese/*.otf
-          # 获取版本
-          version="$(curl --silent "https://api.github.com/repos/adobe-fonts/source-han-serif/releases/latest" | grep -Po '"tag_name": "\K.*?(?=")')"
-          mkdir font
-          mv OTF/SimplifiedChinese/*.ttf font
-          # 压缩
-          cd font
-          zip -9 -r -UN=UTF8 ../SourceHanSerifSC_TTF_$version.zip *.ttf
-          cd ${{ github.workspace }}
-          # 清理
-          rm -rf OTF font *.txt
-
-          # 思源宋体TC
-          # 下载
-          wget https://github.com/adobe-fonts/source-han-serif/releases/latest/download/10_SourceHanSerifTC.zip
-          # 解压
-          unzip 10_SourceHanSerifTC.zip
-          # 转换
-          otf2ttf OTF/TraditionalChinese/*.otf
-          # 获取版本
-          version="$(curl --silent "https://api.github.com/repos/adobe-fonts/source-han-serif/releases/latest" | grep -Po '"tag_name": "\K.*?(?=")')"
-          mkdir font
-          mv OTF/TraditionalChinese/*.ttf font
-          # 压缩
-          cd font
-          zip -9 -r -UN=UTF8 ../SourceHanSerifTC_TTF_$version.zip *.ttf
-          cd ${{ github.workspace }}
-          # 清理
-          rm -rf OTF font *.txt
+          # 安装 fonttools
+          pip install fonttools
+          curl -LOJ https://raw.githubusercontent.com/fonttools/fonttools/main/Snippets/otf2ttf.py
 
           # 思源黑体SC
-          wget https://github.com/adobe-fonts/source-han-sans/releases/latest/download/09_SourceHanSansSC.zip
-          # 解压
-          unzip 09_SourceHanSansSC.zip
-          # 转换
-          otf2ttf OTF/SimplifiedChinese/*.otf
-          # 获取版本
-          version="$(curl --silent "https://api.github.com/repos/adobe-fonts/source-han-sans/releases/latest" | grep -Po '"tag_name": "\K.*?(?=")')"
-          mkdir font
-          mv OTF/SimplifiedChinese/*.ttf font
-          # 压缩
-          cd font
-          zip -9 -r -UN=UTF8 ../SourceHanSansSC_TTF_$version.zip *.ttf
-          cd ${{ github.workspace }}
-          # 清理
-          rm -rf OTF font *.txt
-
+          curl -Lo SourceHanSansSC.zip https://github.com/adobe-fonts/source-han-sans/releases/latest/download/09_SourceHanSansSC.zip
           # 思源黑体TC
-          wget https://github.com/adobe-fonts/source-han-sans/releases/latest/download/10_SourceHanSansTC.zip
+          curl -Lo SourceHanSansTC.zip https://github.com/adobe-fonts/source-han-sans/releases/latest/download/10_SourceHanSansTC.zip
+          # 思源宋体SC
+          curl -Lo SourceHanSerifSC.zip https://github.com/adobe-fonts/source-han-serif/releases/latest/download/09_SourceHanSerifSC.zip
+          # 思源宋体TC
+          curl -Lo SourceHanSerifTC.zip https://github.com/adobe-fonts/source-han-serif/releases/latest/download/10_SourceHanSerifTC.zip
+
           # 解压
-          unzip 10_SourceHanSansTC.zip
+          for file in *.zip; do
+            unzip -o "$file" "*.otf" -d temp
+          done
+
+          # 创建工作路径
+          mkdir -p fonts
+          find temp -type f -name "*.otf" -exec mv {} fonts/ \;
+
           # 转换
-          otf2ttf OTF/TraditionalChinese/*.otf
-          # 获取版本
-          version="$(curl --silent "https://api.github.com/repos/adobe-fonts/source-han-sans/releases/latest" | grep -Po '"tag_name": "\K.*?(?=")')"
-          mkdir font
-          mv OTF/TraditionalChinese/*.ttf font
-          # 压缩
-          cd font
-          zip -9 -r -UN=UTF8 ../SourceHanSansTC_TTF_$version.zip *.ttf
-          cd ${{ github.workspace }}
-          # 清理
-          rm -rf OTF font *.txt
+          for file in fonts/*.otf; do
+            python3 otf2ttf.py "$file"
+          done
+          
+          # 打包
+          cd fonts || exit 1
+          SANS_VERSION="$(curl --silent "https://api.github.com/repos/adobe-fonts/source-han-sans/releases/latest" | grep -Po '"tag_name": "\K.*?(?=")')"
+          SERIF_VERSION="$(curl --silent "https://api.github.com/repos/adobe-fonts/source-han-serif/releases/latest" | grep -Po '"tag_name": "\K.*?(?=")')"
+          zip -9 -r -UN=UTF8 ./SourceHanSansSC_TTF_$SANS_VERSION.zip SourceHanSansSC-*.ttf
+          zip -9 -r -UN=UTF8 ./SourceHanSansTC_TTF_$SANS_VERSION.zip SourceHanSansTC-*.ttf
+          zip -9 -r -UN=UTF8 ./SourceHanSerifSC_TTF_$SERIF_VERSION.zip SourceHanSerifSC-*.ttf
+          zip -9 -r -UN=UTF8 ./SourceHanSerifTC_TTF_$SERIF_VERSION.zip SourceHanSerifTC-*.ttf
+          cd .. || exit 1
 
-          echo "DATE=$(date +'%Y%m%d')" >> $GITHUB_ENV
+          # delete all releases and their tags
+          gh release list | awk -F '\t' '{print $3}' | while read -r line; do gh release delete --yes --cleanup-tag "$line"; done
 
-
-      - name: Remove old Releases
-        uses: dev-drprasad/delete-older-releases@v0.2.0
-        with:
-          keep_latest: 5
-          delete_tags: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Release
-        uses: ncipollo/release-action@v1
-        with:
-          artifacts: "*.zip"
-          tag: ${{ env.DATE }}
-          token: ${{ secrets.GITHUB_TOKEN }}
+          # create release
+          if [ "${{ inputs.version }}" != "" ]; then
+            tag="${{ inputs.version }}"
+          else
+            tag="$(date +"%Y%m%d")"
+          fi
+          gh release create "$tag" --generate-notes "fonts/*TTF*.zip"
